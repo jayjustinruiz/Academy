@@ -1,0 +1,253 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC ### Agenda
+# MAGIC - Learn to read csv files with headers and schema
+# MAGIC - extract columns, and display
+# MAGIC - filter datasets
+# MAGIC - rename columns 
+# MAGIC - select specific columns
+# MAGIC - order by column values
+# MAGIC - agg function count, min, max
+# MAGIC - distinct
+# MAGIC
+# MAGIC ### Dataset
+# MAGIC - San Francisco Fire Department Public Dataset
+# MAGIC - https://www.kaggle.com/datasets/imankity/san-francisco-fire-department-public-dataset
+# MAGIC
+# MAGIC ### Analysis
+# MAGIC - What were all the different types of fire calls in 2018?
+# MAGIC - What months within the year 2018 saw the highest number of fire calls?
+# MAGIC - Which neighborhood in San Francisco generated the most fire calls in 2018
+# MAGIC - Which neighborhoods had the worst response times to fire calls in 2018
+# MAGIC - Which week in the year in 2018 had the most fire calls?
+# MAGIC - Is there a correlation between neighborhood, zip code, and number of fire calls
+
+# COMMAND ----------
+
+from pyspark.sql import functions as F
+
+# COMMAND ----------
+
+df = (spark
+      .read
+      .format("csv")
+      .option("header", True)
+      .option("inferSchama", True)
+      .load("/Volumes/workspace/default/external_datasets/sf-fire-calls.csv")
+)
+df.printSchema()
+
+# COMMAND ----------
+
+df.columns
+
+# COMMAND ----------
+
+len(df.columns)
+
+# COMMAND ----------
+
+type(df.columns)
+
+# COMMAND ----------
+
+df.show(10, False)
+
+# COMMAND ----------
+
+df.display()
+
+# COMMAND ----------
+
+few_df = (
+    df.select("IncidentNumber", "AvailableDtTm", "CallType")
+    .where(F.col("CallType")!= "Medical Incident")
+)
+few_df.display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Projections and filters
+
+# COMMAND ----------
+
+few_fire_df = (df
+.select("IncidentNumber", "AvailableDtTm", "CallType") 
+.where(F.col("CallType") != "Medical Incident"))
+
+
+# COMMAND ----------
+
+few_fire_df.display()
+
+# COMMAND ----------
+
+few_fire_df = (df
+.select(["IncidentNumber", "AvailableDtTm", "CallType"]) 
+.where(F.col("CallType") != "Medical Incident"))
+
+few_fire_df.display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Renaming, adding, and dropping columns. 
+
+# COMMAND ----------
+
+df.select('Delay').display()
+
+# COMMAND ----------
+
+renamed_df = (
+    df.withColumn("ResponseDelayedinMins", F.col("Delay").cast("decimal"))
+)
+
+renamed_df.where(F.col("ResponseDelayedinMins") > 5).display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Casting columns type
+
+# COMMAND ----------
+
+fire_ts_df = (
+    renamed_df.withColumn("IncidentDate", F.to_timestamp(F.col("CallDate"), "MM/dd/yyyy"))
+    .withColumn("OnWatchDate", F.to_timestamp(F.col("WatchDate"), "MM/dd/yyyy"))
+    .withColumn("AvailableDtTS", F.to_timestamp(F.col("AvailableDtTm"), "MM/dd/yyyy hh:mm:ss a"))
+    .drop(*["CallDate","WatchDate","AvailableDtTm"])
+)
+
+fire_ts_df.select("IncidentDate", "OnWatchDate", "AvailableDtTS").display()
+
+# COMMAND ----------
+
+(fire_ts_df
+ .select(F.year('IncidentDate'))
+ .distinct()
+ .orderBy(F.year('IncidentDate'))
+ .display())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Aggregations
+
+# COMMAND ----------
+
+(fire_ts_df
+ .select("CallType")
+ .where(F.col("CallType").isNotNull())
+ .groupBy("CallType")
+ .count()
+ .orderBy("count", ascending=False)
+ .display())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC min(), max(), sum(), and avg()
+
+# COMMAND ----------
+
+(fire_ts_df.select(F.sum("NumAlarms"), F.avg("ResponseDelayedinMins"),
+F.min("ResponseDelayedinMins"), F.max("ResponseDelayedinMins"))
+.display())
+
+# COMMAND ----------
+
+(fire_ts_df.groupBy("CallType").agg(F.avg("ResponseDelayedinMins"),
+F.min("ResponseDelayedinMins"), F.max("ResponseDelayedinMins"))
+.display())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC What were all the different types of fire calls in 2018?
+
+# COMMAND ----------
+
+fire_ts_df_2018 = fire_ts_df.where("year(IncidentDate) >= 2018")
+fire_ts_df_2018.display()
+
+# COMMAND ----------
+
+fire_ts_df_2018.select("callType").distinct().display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC  What months within the year 2018 saw the highest number of fire calls?
+
+# COMMAND ----------
+
+(fire_ts_df_2018
+ .select(F.month("IncidentDate").alias("IncidentMonth"),"CallType")
+ .groupBy(F.col("IncidentMonth"))
+ .agg(F.count("CallType").alias("count_of_incident"))
+ .orderBy(F.col("count_of_incident").desc(), "IncidentMonth",)).display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Which neighborhood in San Francisco generated the most fire calls in 2018
+
+# COMMAND ----------
+
+(fire_ts_df_2018
+ .select(F.month("IncidentDate").alias("IncidentMonth"),"CallType", "Neighborhood")
+ .groupBy(F.col("Neighborhood"))
+ .agg(F.count("CallType").alias("count_of_incident"))
+ .orderBy(F.col("count_of_incident").desc())).display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Which neighborhoods had the worst response times to fire calls in 2018
+
+# COMMAND ----------
+
+(fire_ts_df_2018
+ .select(F.month("IncidentDate").alias("IncidentMonth"),"CallType", "Neighborhood","ResponseDelayedinMins")
+ .groupBy(F.col("Neighborhood"),F.col("CallType"))
+ .agg(F.avg("ResponseDelayedinMins").alias("avg_ResponseDelayedinMins"), F.count("CallType").alias("Total_incident"))
+ .orderBy(F.col("avg_ResponseDelayedinMins").desc())).display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC  Which week in the year in 2018 had the most fire calls?
+
+# COMMAND ----------
+
+(fire_ts_df_2018
+ .select(F.month("IncidentDate").alias("IncidentMonth"), F.weekofyear("IncidentDate").alias("IncidentWeek"),"CallType")
+ .groupBy(F.col("IncidentWeek"))
+ .agg(F.count("CallType").alias("count_of_incident"))
+ .orderBy(F.col("count_of_incident").desc(), "IncidentWeek",)).display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Is there a correlation between neighborhood, zip code, and number of fire calls
+
+# COMMAND ----------
+
+output_df = (fire_ts_df_2018
+ .select("IncidentDate","CallType", "Neighborhood","ResponseDelayedinMins", "zipcode")
+ .groupBy(*["zipcode", "Neighborhood"])
+ .agg(F.avg("ResponseDelayedinMins").alias("avg_ResponseDelayedinMins"), F.count("CallType").alias("Total_incident"))
+ .orderBy(F.col("avg_ResponseDelayedinMins").desc()))
+
+# COMMAND ----------
+
+output_df.display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC • How can we use Parquet files or SQL tables to store this data and read it back?
+
+# COMMAND ----------
