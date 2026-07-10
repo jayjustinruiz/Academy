@@ -18,7 +18,7 @@ import boto3
 
 from datetime import datetime, timezone
 
-from config import BRONZE_BUCKET
+from config import S3_BUCKET
 
 # Initialize S3 client
 s3 = boto3.client("s3")
@@ -58,7 +58,7 @@ def write_to_s3(data, dataset):
     try:
 
         s3.put_object(
-            Bucket=BRONZE_BUCKET,
+            Bucket=S3_BUCKET,
             Key=key,
             Body=json.dumps(data, default=str),
             ContentType="application/json"

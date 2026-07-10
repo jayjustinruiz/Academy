@@ -9,7 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from config import (
-    STATE_BUCKET,
+    S3_BUCKET,
     CHECKPOINT_KEY,
 )
 
@@ -32,7 +32,7 @@ def load_checkpoint():
 
     try:
         response = s3.get_object(
-            Bucket=STATE_BUCKET,
+            Bucket=S3_BUCKET,
             Key=CHECKPOINT_KEY,
         )
 
@@ -80,7 +80,7 @@ def save_checkpoint(timestamp):
     try:
 
         s3.put_object(
-            Bucket=STATE_BUCKET,
+            Bucket=S3_BUCKET,
             Key=CHECKPOINT_KEY,
             Body=json.dumps(checkpoint),
             ContentType="application/json",

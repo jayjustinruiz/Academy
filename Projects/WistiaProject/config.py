@@ -10,12 +10,7 @@ import os
 # AWS CONFIGURATION
 # ==========================================================
 
-# Bronze S3 bucket for raw API responses
-BRONZE_BUCKET = os.environ["BRONZE_BUCKET"]
-
-# S3 bucket used to store ingestion checkpoints
-STATE_BUCKET = os.environ["STATE_BUCKET"]
-
+S3_BUCKET = os.environ["S3_BUCKET"]
 
 # ==========================================================
 # WISTIA API CONFIGURATION
@@ -44,7 +39,7 @@ HEADERS = {
 DEFAULT_PAGE_SIZE = 100
 
 # Location of the incremental ingestion checkpoint.
-CHECKPOINT_KEY = "wistia/last_run.json"
+CHECKPOINT_KEY = "checkpoint/last_run.json"
 
 
 # ==========================================================
