@@ -49,7 +49,7 @@ def write_to_s3(data, dataset):
     partition = now.strftime("%Y-%m-%d")
 
     key = (
-        f"bronze/wistia/"
+        f"bronze/"
         f"{dataset}/"
         f"ingestion_date={partition}/"
         f"data_{timestamp}.json"

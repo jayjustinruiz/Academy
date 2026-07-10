@@ -82,6 +82,7 @@ def lambda_handler(event, context):
 
     visitors = fetch_all_pages(
         fetch_visitors,
+        max_pages=5
     )
 
     new_visitors = filter_incremental(
@@ -108,6 +109,7 @@ def lambda_handler(event, context):
         events = fetch_all_pages(
             fetch_events,
             media_id=media_id,
+            max_pages=5
         )
 
         all_events.extend(events)

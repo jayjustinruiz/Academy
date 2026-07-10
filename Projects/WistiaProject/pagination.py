@@ -14,7 +14,7 @@ Implements FR6: Pagination handling.
 from config import DEFAULT_PAGE_SIZE
 
 
-def fetch_all_pages(fetch_function, per_page=DEFAULT_PAGE_SIZE, **kwargs):
+def fetch_all_pages(fetch_function, per_page=DEFAULT_PAGE_SIZE, max_pages=None, **kwargs):
     """
     Fetch all pages from a paginated API endpoint.
 
@@ -44,6 +44,10 @@ def fetch_all_pages(fetch_function, per_page=DEFAULT_PAGE_SIZE, **kwargs):
     page = 1
 
     while True:
+
+        if max_pages is not None and page > max_pages:
+            print(f"Reached max_pages={max_pages}")
+            break
 
         records = fetch_function(
             page=page,
