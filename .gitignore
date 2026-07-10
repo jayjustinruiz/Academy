@@ -1,3 +1,8 @@
 /.DS_StoreProjects/SCD1/AWS_Credentials.yml
 Projects/SCD1/AWS_Credentials.yml
 .DS_Store
+Projects/WalmartProject/SC_Validate.py
+Projects/SCD2/Product_Dim_1.csv
+.gitignore
+Projects/SCD2/Product_Dim.csv
+Python/PythonModulesSamples.py
